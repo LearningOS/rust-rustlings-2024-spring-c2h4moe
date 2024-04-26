@@ -2,10 +2,12 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
+use std::fmt::Debug;
+use std::mem::swap;
+use std::ops::IndexMut;
 
 pub struct Heap<T>
 where
@@ -36,8 +38,25 @@ where
         self.len() == 0
     }
 
-    pub fn add(&mut self, value: T) {
+    pub fn add(&mut self, value: T) 
+    where T: Clone
+    {
         //TODO
+        self.count += 1;
+        self.items.push(value);
+        let mut cur = self.count;
+        while self.parent_idx(cur) > 0 {
+            let par = self.parent_idx(cur);
+            if (self.comparator)(&self.items[cur], &self.items[par]) {
+                let tmp_cur = self.items[cur].clone();
+                let tmp_par = self.items[par].clone();
+                self.items[cur] = tmp_par;
+                self.items[par] = tmp_cur;
+                cur = par;
+            } else {
+                break;
+            }
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -76,16 +95,63 @@ where
         Self::new(|a, b| a > b)
     }
 }
-
+struct Test {
+    a: String,
+    b: String
+}
+fn test(m: &mut Test) -> &mut String {
+    &mut m.a
+}
 impl<T> Iterator for Heap<T>
 where
     T: Default,
 {
     type Item = T;
-
+    
     fn next(&mut self) -> Option<T> {
         //TODO
-		None
+        if self.count == 0 {
+            None
+        } else {
+            self.items.swap(1, self.count);
+            self.count -= 1;
+            let mut cur = 1;
+            while cur <= self.count {
+                let lc = self.left_child_idx(cur);
+                let rc = self.right_child_idx(cur);
+                match (lc > self.count, rc > self.count) {
+                    (false, false) => {
+                        let to_swap = if (self.comparator)(&self.items[lc], &self.items[rc]) {lc} else {rc};
+                        if (self.comparator)(&self.items[to_swap], &self.items[cur]) {
+                            self.items.swap(cur, to_swap);
+                            cur = to_swap;
+                        } else {
+                            break;
+                        }
+                    },
+                    (false, true) => {
+                        if (self.comparator)(&self.items[lc], &self.items[cur]) {
+                            self.items.swap(cur, lc);
+                            cur = lc;
+                        } else {
+                            break;
+                        }
+                    },
+                    (true, false) => {
+                        if (self.comparator)(&self.items[lc], &self.items[cur]) {
+                            self.items.swap(cur, rc);
+                            cur = rc;
+                        } else {
+                            break;
+                        }
+                    },
+                    (true, true) => {
+                        break;
+                    }
+                }
+            }
+            self.items.pop()
+        }
     }
 }
 
